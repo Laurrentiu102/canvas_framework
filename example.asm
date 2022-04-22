@@ -152,11 +152,11 @@ color_proc proc
 	cmp eax,0
 	je return
 	
-	
+	;
 	; add dword ptr [ebp+arg1],1
 	; push [ebp+arg2]
 	; push [ebp+arg1]
-	; call color_proca
+	; call color_proc
 	; add esp,12	
 	
 	sub dword ptr [ebp+arg1],1
