@@ -26,14 +26,14 @@ public start
 ;sectiunile programului, date, respectiv cod
 .data
 ;aici declaram date
-hexa_format DB "edi: %x", 0ah, 0
-decimal_format DB "%d", 0ah, 0
+hexa_format DB "%x", 0ah, 0
+decimal_format DB "decimal: %d", 0ah, 0
 decimal_formatx2 DB "%d %d", 0ah, 0
 window_title DB "LaurCrush",0
-area_width EQU 601;640
+area_width EQU 600;640
 area_height EQU 1000;480
 
-editest DD 2
+cluster_size DD 100
 
 inceput_linii_orizontale DD 199
 contor_linii_orizontale DD 199
@@ -49,6 +49,7 @@ contor_matrice_y DD 200
 colors DD 0f21111h,01149f2h,0ba04b1h,038ed24h,0fffc4ah
 
 area DD 0
+areav DD 0
 clickcolor DD 0
 pixel1color DD 0
 pixel2color DD 0
@@ -78,6 +79,160 @@ include letters.inc
 ; arg3 - pos_x
 ; arg4 - pos_y
 
+is_valid_macro macro x, y, color
+	local coloreaza,nimic,final
+	mov ecx,x
+	cmp ecx,area_width
+	jae nimic
+	
+	mov ecx,y
+	cmp ecx,area_height
+	jae nimic
+	
+	mov ecx,y
+	cmp ecx,199
+	jb nimic
+	
+	mov ecx,x
+	cmp ecx,0
+	jb nimic
+	
+	mov eax,y
+	mov ebx, area_width
+	mul ebx
+	add eax,x
+	shl eax, 2
+	add eax, areav
+	mov ecx,dword ptr [eax]
+	
+	
+	cmp ecx,0c2c2c2c2h
+	je nimic
+	
+	cmp ecx,0
+	je nimic
+	
+	cmp ecx,0ffffffh
+	je nimic
+	
+	cmp ecx,clickcolor
+	je coloreaza
+	
+	
+	; cmp ecx,0
+	; je coloreaza
+	
+	jmp nimic
+
+coloreaza:
+	mov dword ptr [eax],0c2c2c2c2h
+	inc cluster_size
+	mov eax,-1
+	jmp final
+coloreaza_alb:
+	mov dword ptr [eax],0ffffffh
+	mov eax,-1
+	jmp final
+nimic:
+	mov eax,0
+final:
+endm
+
+is_valid_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; push offset decimal_formatx2
+	; call printf
+	; add esp,12
+	
+	is_valid_macro [ebp+arg1], [ebp+arg2],clickcolor
+	
+	cmp eax,0
+	je return
+	
+	;
+	; add dword ptr [ebp+arg1],1
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; call is_valid_proc
+	; add esp,12	
+	
+	sub dword ptr [ebp+arg1],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_proc
+	add esp,8
+	
+	add dword ptr [ebp+arg1],1
+	add dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_proc
+	add esp,8
+	
+	add dword ptr [ebp+arg1],1
+	sub dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_proc
+	add esp,8
+	
+	sub dword ptr [ebp+arg1],1
+	sub dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_proc
+	add esp,8
+	
+return:
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+is_valid_proc endp
+
+update_areav_macro macro
+local bucla_orizontala,bucla_verticala
+	xor edx,edx
+	xor eax,eax
+	
+	add edx, areav
+	add eax, area
+	mov ebx, area_height
+bucla_verticala:
+	mov contor_matrice_x,area_width
+bucla_orizontala:
+	
+	mov ecx,dword ptr[eax]
+	mov dword ptr[edx],ecx
+	
+	add eax,4
+	add edx,4
+	
+	dec contor_matrice_x
+	jnz bucla_orizontala
+	dec ebx
+	jnz bucla_verticala
+endm
+
+update_areav_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	update_areav_macro
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+update_areav_proc endp
+
 color_macro macro x, y, color
 	local coloreaza,nimic,final
 	mov ecx,x
@@ -89,12 +244,12 @@ color_macro macro x, y, color
 	jae nimic
 	
 	mov ecx,y
-	cmp ecx,200
-	jbe nimic
+	cmp ecx,199
+	jb nimic
 	
 	mov ecx,x
-	cmp ecx,1
-	jbe nimic
+	cmp ecx,0
+	jb nimic
 	
 	mov eax,y
 	mov ebx, area_width
@@ -123,7 +278,7 @@ color_macro macro x, y, color
 	jmp nimic
 
 coloreaza:
-	mov dword ptr [eax],0
+	mov dword ptr [eax],0c2c2c2c2h
 	mov eax,-1
 	jmp final
 coloreaza_alb:
@@ -141,11 +296,11 @@ color_proc proc
 	pusha
 	
 	
-	push [ebp+arg2]
-	push [ebp+arg1]
-	push offset decimal_formatx2
-	call printf
-	add esp,12
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; push offset decimal_formatx2
+	; call printf
+	; add esp,12
 	
 	color_macro [ebp+arg1], [ebp+arg2],clickcolor
 	
@@ -250,6 +405,7 @@ square macro x, y, len, color
 	
 	add eax,x
 	shl eax, 2
+	
 	add eax, area
 	mov ebx,len
 bucla_patrat:
@@ -291,7 +447,7 @@ make_matrix_squares proc
 	mov edx,inceput_matrice_y
 	mov contor_matrice_y,edx
 loop_orizontala:
-	mov contor_matrice_x,1
+	mov contor_matrice_x,0
 loop_verticala:
 	push contor_matrice_y
 	push contor_matrice_x
@@ -382,7 +538,7 @@ galben:
 	jmp final
 	;add edx,[colors+eax]
 	final:
-	square [ebp+arg1],[ebp+arg2],39,edx
+	square [ebp+arg1],[ebp+arg2],40,edx
 	
 	popa
 	mov esp, ebp
@@ -489,23 +645,28 @@ draw proc
 	call memset
 	add esp, 12
 	call make_matrix_squares
-	call make_matrix_lines
+	call update_areav_proc
+	;call make_matrix_lines
 	jmp afisare_litere
 	
 evt_click:
 	get_color [ebp+arg2],[ebp+arg3],clickcolor
 	
-	push clickcolor
-	push offset hexa_format
-	call printf
+	mov cluster_size,0
+	push [ebp+arg3]
+	push [ebp+arg2]
+	call is_valid_proc
 	add esp,8
 	
-	push 5
+	cmp cluster_size,3200
+	jb no_delete
+	
 	push [ebp+arg3]
 	push [ebp+arg2]
 	call color_proc
-	add esp,12
-	
+	add esp,8
+	call update_areav_proc
+no_delete:
 	jmp afisare_litere
 
 evt_timer:
@@ -575,6 +736,15 @@ start:
 	call malloc
 	add esp, 4
 	mov area, eax
+	
+	mov eax, area_width
+	mov ebx, area_height
+	mul ebx
+	shl eax, 2
+	push eax
+	call malloc
+	add esp, 4
+	mov areav, eax
 	;apelam functia de desenare a ferestrei
 	; typedef void (*DrawFunc)(int evt, int x, int y);
 	; void __cdecl BeginDrawing(const char *title, int width, int height, unsigned int *area, DrawFunc draw);
