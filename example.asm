@@ -40,10 +40,10 @@ contor_linii_orizontale DD 199
 inceput_linii_verticale DD 0
 contor_linii_verticale DD 0
 
-inceput_matrice_x DD 1
+inceput_matrice_x DD 0
 inceput_matrice_y DD 200
 
-contor_matrice_x DD 1
+contor_matrice_x DD 0
 contor_matrice_y DD 200
 
 colors DD 0f21111h,01149f2h,0ba04b1h,038ed24h,0fffc4ah
@@ -282,7 +282,7 @@ coloreaza:
 	mov eax,-1
 	jmp final
 coloreaza_alb:
-	mov dword ptr [eax],0ffffffh
+	mov dword ptr [eax],0c2c2c2c2h
 	mov eax,-1
 	jmp final
 nimic:
@@ -296,11 +296,11 @@ color_proc proc
 	pusha
 	
 	
-	; push [ebp+arg2]
-	; push [ebp+arg1]
-	; push offset decimal_formatx2
-	; call printf
-	; add esp,12
+	push [ebp+arg2]
+	push [ebp+arg1]
+	push offset decimal_formatx2
+	call printf
+	add esp,12
 	
 	color_macro [ebp+arg1], [ebp+arg2],clickcolor
 	
@@ -474,10 +474,10 @@ make_matrix_lines proc
 	mov ecx,inceput_linii_orizontale
 	mov contor_linii_orizontale,ecx
 bucla_linii_orizontale:
-	linie_orizontala 0,contor_linii_orizontale,area_width,0FFFFFFh
+	linie_orizontala 0,contor_linii_orizontale,area_width,0h
 	add contor_linii_orizontale,40
 	cmp contor_linii_orizontale,area_height
-	jb bucla_linii_orizontale
+	jbe bucla_linii_orizontale
 	
 	mov ecx,inceput_linii_orizontale
 	mov contor_linii_orizontale,ecx
@@ -486,10 +486,16 @@ bucla_linii_orizontale:
 	mov ecx,inceput_linii_verticale
 	mov contor_linii_verticale,ecx
 bucla_linii_verticale:
-	linie_verticala contor_linii_verticale,inceput_linii_orizontale,800,0FFFFFFh
+	linie_verticala contor_linii_verticale,inceput_linii_orizontale,800,0h
 	add contor_linii_verticale,40
+	cmp contor_linii_verticale,600
+	je scade
+	jmp skip
+scade:
+	dec contor_linii_verticale
+skip:
 	cmp contor_linii_verticale,area_width
-	jb bucla_linii_verticale
+	jbe bucla_linii_verticale
 	
 	popa
 	mov esp, ebp
