@@ -51,6 +51,7 @@ colors DD 0f21111h,01149f2h,0ba04b1h,038ed24h,0fffc4ah
 
 area DD 0
 areav DD 0
+areal DD 0
 clickcolor DD 0
 pixel1color DD 0
 pixel2color DD 0
@@ -79,6 +80,121 @@ include letters.inc
 ; arg2 - pointer la vectorul de pixeli
 ; arg3 - pos_x
 ; arg4 - pos_y
+
+color_macrov macro x, y, color
+	local coloreaza,nimic,final
+	mov ecx,x
+	cmp ecx,area_width
+	jae nimic
+	
+	mov ecx,y
+	cmp ecx,area_height
+	jae nimic
+	
+	mov ecx,y
+	cmp ecx,199
+	jb nimic
+	
+	mov ecx,x
+	cmp ecx,0
+	jb nimic
+	
+	mov eax,y
+	mov ebx, area_width
+	mul ebx
+	add eax,x
+	shl eax, 2
+	add eax, areav
+	mov ecx,dword ptr [eax]
+	
+	cmp ecx,0c2c2c2h
+	je nimic
+	
+	cmp ecx,0
+	je nimic
+	
+	cmp ecx,0ffffffh
+	je nimic
+	
+	cmp ecx,clickcolor
+	je coloreaza
+	
+	
+	; cmp ecx,0
+	; je coloreaza
+	
+	jmp nimic
+
+coloreaza:
+	mov dword ptr [eax],0c2c2c2h
+	mov eax,-1
+	jmp final
+coloreaza_alb:
+	mov dword ptr [eax],0c2c2c2h
+	mov eax,-1
+	jmp final
+nimic:
+	mov eax,0
+final:
+endm
+
+color_procv proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	
+	push [ebp+arg2]
+	push [ebp+arg1]
+	push offset decimal_formatx2
+	call printf
+	add esp,12
+	
+	color_macrov [ebp+arg1], [ebp+arg2],clickcolor
+	
+	cmp eax,0
+	je return
+	
+	;
+	; add dword ptr [ebp+arg1],1
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; call color_proc
+	; add esp,12	
+	
+	sub dword ptr [ebp+arg1],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call color_procv
+	add esp,8
+	
+	add dword ptr [ebp+arg1],1
+	add dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call color_procv
+	add esp,8
+	
+	add dword ptr [ebp+arg1],1
+	sub dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call color_procv
+	add esp,8
+	
+	sub dword ptr [ebp+arg1],1
+	sub dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call color_procv
+	add esp,8
+	
+return:
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+color_procv endp
 
 go_down_macro macro
 local bucla_orizontala,bucla_verticala,bucla_jos_sus,nimic,inceput
@@ -434,7 +550,7 @@ get_color macro x, y, color
 	mul ebx
 	add eax,x
 	shl eax, 2
-	add eax, area
+	add eax, areav
 	mov eax,dword ptr [eax]
 	mov color,eax
 endm
@@ -740,6 +856,8 @@ evt_click:
 	
 	cmp clickcolor,0c2c2c2h
 	je no_delete
+	cmp clickcolor,0c2c2c2c2h
+	je no_delete
 	
 	mov cluster_size,0
 	push [ebp+arg3]
@@ -750,14 +868,20 @@ evt_click:
 	cmp cluster_size,3200
 	jb no_delete
 	
+	call update_areav_proc
 	push [ebp+arg3]
 	push [ebp+arg2]
 	call color_proc
 	add esp,8
 	
+	push [ebp+arg3]
+	push [ebp+arg2]
+	call color_procv
+	add esp,8
+	
+no_delete:
 	call go_down_proc
 	call update_areav_proc
-no_delete:
 	jmp afisare_litere
 
 evt_timer:
@@ -836,6 +960,15 @@ start:
 	call malloc
 	add esp, 4
 	mov areav, eax
+	
+	mov eax, area_width
+	mov ebx, area_height
+	mul ebx
+	shl eax, 2
+	push eax
+	call malloc
+	add esp, 4
+	mov areal, eax
 	;apelam functia de desenare a ferestrei
 	; typedef void (*DrawFunc)(int evt, int x, int y);
 	; void __cdecl BeginDrawing(const char *title, int width, int height, unsigned int *area, DrawFunc draw);
