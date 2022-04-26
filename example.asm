@@ -45,6 +45,7 @@ inceput_matrice_y DD 200
 
 contor_matrice_x DD 0
 contor_matrice_y DD 200
+contor_matrice_y1 DD 200
 
 colors DD 0f21111h,01149f2h,0ba04b1h,038ed24h,0fffc4ah
 
@@ -79,6 +80,85 @@ include letters.inc
 ; arg3 - pos_x
 ; arg4 - pos_y
 
+go_down_macro macro
+local bucla_orizontala,bucla_verticala,bucla_jos_sus,nimic,inceput
+
+	mov eax,area_height
+	mov ebx,area_width
+	mul ebx
+	add eax,area_width
+	shl eax,2
+	add eax,area
+	sub eax,8*area_width
+	mov contor_matrice_y,area_height
+bucla_verticala:	
+	mov contor_matrice_x,area_width
+	add eax,4*area_width
+bucla_orizontala:
+	
+	
+	
+	cmp dword ptr [eax],0c2c2c2h
+	jne nimic
+	cmp dword ptr [eax-4*area_width],0c2c2c2h
+	jne nimic
+	
+inceput:
+	push eax
+	
+	mov ecx,contor_matrice_y
+	mov contor_matrice_y1,ecx
+	bucla_jos_sus:	
+	mov ecx,dword ptr [eax-4*area_width]
+	mov dword ptr [eax],ecx
+	sub eax,4*area_width
+	dec contor_matrice_y1
+	cmp contor_matrice_y1,200
+	jne bucla_jos_sus
+	
+	pop eax
+	cmp dword ptr [eax],0c2c2c2h
+	je inceput
+	nimic:
+	sub eax,4
+	dec contor_matrice_x
+	cmp contor_matrice_x,-1
+	jne bucla_orizontala
+	
+	sub eax,4*area_width
+	dec contor_matrice_y
+	cmp contor_matrice_y,200
+	jne bucla_verticala
+	
+	; mov contor_matrice_y,area_height
+; bucla_verticala:
+	; mov dword ptr [eax],0
+	; push eax
+	; push contor_matrice_y
+	; push offset decimal_format
+	; call printf
+	; add esp,8
+	; pop eax
+	
+	; sub eax,4*area_width
+	; dec contor_matrice_y
+	; cmp contor_matrice_y,200
+	; jne bucla_verticala
+endm
+
+go_down_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	go_down_macro
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+go_down_proc endp
+
 is_valid_macro macro x, y, color
 	local coloreaza,nimic,final
 	mov ecx,x
@@ -106,7 +186,7 @@ is_valid_macro macro x, y, color
 	mov ecx,dword ptr [eax]
 	
 	
-	cmp ecx,0c2c2c2c2h
+	cmp ecx,0c2c2c2h
 	je nimic
 	
 	cmp ecx,0
@@ -125,7 +205,7 @@ is_valid_macro macro x, y, color
 	jmp nimic
 
 coloreaza:
-	mov dword ptr [eax],0c2c2c2c2h
+	mov dword ptr [eax],0c2c2c2h
 	inc cluster_size
 	mov eax,-1
 	jmp final
@@ -259,7 +339,7 @@ color_macro macro x, y, color
 	add eax, area
 	mov ecx,dword ptr [eax]
 	
-	cmp ecx,0c2c2c2c2h
+	cmp ecx,0c2c2c2h
 	je nimic
 	
 	cmp ecx,0
@@ -278,11 +358,11 @@ color_macro macro x, y, color
 	jmp nimic
 
 coloreaza:
-	mov dword ptr [eax],0c2c2c2c2h
+	mov dword ptr [eax],0c2c2c2h
 	mov eax,-1
 	jmp final
 coloreaza_alb:
-	mov dword ptr [eax],0c2c2c2c2h
+	mov dword ptr [eax],0c2c2c2h
 	mov eax,-1
 	jmp final
 nimic:
@@ -296,11 +376,11 @@ color_proc proc
 	pusha
 	
 	
-	push [ebp+arg2]
-	push [ebp+arg1]
-	push offset decimal_formatx2
-	call printf
-	add esp,12
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; push offset decimal_formatx2
+	; call printf
+	; add esp,12
 	
 	color_macro [ebp+arg1], [ebp+arg2],clickcolor
 	
@@ -658,6 +738,9 @@ draw proc
 evt_click:
 	get_color [ebp+arg2],[ebp+arg3],clickcolor
 	
+	cmp clickcolor,0c2c2c2h
+	je no_delete
+	
 	mov cluster_size,0
 	push [ebp+arg3]
 	push [ebp+arg2]
@@ -671,6 +754,8 @@ evt_click:
 	push [ebp+arg2]
 	call color_proc
 	add esp,8
+	
+	call go_down_proc
 	call update_areav_proc
 no_delete:
 	jmp afisare_litere
