@@ -35,7 +35,7 @@ area_height EQU 1000;480
 
 cluster_size DD 100
 
-inceput_linii_orizontale DD 199
+inceput_linii_orizontale DD 200
 contor_linii_orizontale DD 199
 inceput_linii_verticale DD 0
 contor_linii_verticale DD 0
@@ -51,7 +51,7 @@ colors DD 0f21111h,01149f2h,0ba04b1h,038ed24h,0fffc4ah
 
 area DD 0
 areav DD 0
-areal DD 0
+areas DD 0
 clickcolor DD 0
 pixel1color DD 0
 pixel2color DD 0
@@ -80,6 +80,101 @@ include letters.inc
 ; arg2 - pointer la vectorul de pixeli
 ; arg3 - pos_x
 ; arg4 - pos_y
+
+update_lines_macro macro
+local bucla_orizontala,bucla_verticala,nimic,if1,if2,if3
+	xor edx,edx
+	xor eax,eax
+	
+	add edx, area
+	add eax, areas
+	mov ebx, area_height
+	dec ebx
+bucla_verticala:
+	mov contor_matrice_x,area_width
+bucla_orizontala:
+	
+	; cmp dword ptr [edx],0c2c2c2h
+	; jne if1
+	; mov dword ptr [eax],0c2c2c2h
+	
+; if1:
+	; cmp dword ptr [edx],0c2c2c2c2h
+	; jne if2
+	; mov dword ptr [eax],0c2c2c2h
+
+if2:
+	mov ecx,dword ptr [eax]
+	cmp ecx,dword ptr [eax+4]
+	je if3
+	
+	mov dword ptr [eax],0
+	
+if3:
+	cmp ecx,dword ptr [eax+4*area_width]
+	je nimic
+	
+	mov dword ptr [eax],0
+	
+nimic:
+	add eax,4
+	add edx,4
+	
+	dec contor_matrice_x
+	jnz bucla_orizontala
+	dec ebx
+	jnz bucla_verticala
+endm
+
+update_lines_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	update_lines_macro
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+update_lines_proc endp
+
+update_area_macro macro
+local bucla_orizontala,bucla_verticala
+	xor edx,edx
+	xor eax,eax
+	
+	add edx, area
+	add eax, areas
+	mov ebx, area_height
+bucla_verticala:
+	mov contor_matrice_x,area_width
+bucla_orizontala:
+	
+	mov ecx,dword ptr[eax]
+	mov dword ptr[edx],ecx
+	
+	add eax,4
+	add edx,4
+	
+	dec contor_matrice_x
+	jnz bucla_orizontala
+	dec ebx
+	jnz bucla_verticala
+endm
+
+update_area_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	update_area_macro
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+update_area_proc endp
 
 color_macrov macro x, y, color
 	local coloreaza,nimic,final
@@ -144,11 +239,11 @@ color_procv proc
 	pusha
 	
 	
-	push [ebp+arg2]
-	push [ebp+arg1]
-	push offset decimal_formatx2
-	call printf
-	add esp,12
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; push offset decimal_formatx2
+	; call printf
+	; add esp,12
 	
 	color_macrov [ebp+arg1], [ebp+arg2],clickcolor
 	
@@ -392,6 +487,43 @@ return:
 	ret
 is_valid_proc endp
 
+update_areas_macro macro
+local bucla_orizontala,bucla_verticala
+	xor edx,edx
+	xor eax,eax
+	
+	add edx, areas
+	add eax, area
+	mov ebx, area_height
+bucla_verticala:
+	mov contor_matrice_x,area_width
+bucla_orizontala:
+	
+	mov ecx,dword ptr[eax]
+	mov dword ptr[edx],ecx
+	
+	add eax,4
+	add edx,4
+	
+	dec contor_matrice_x
+	jnz bucla_orizontala
+	dec ebx
+	jnz bucla_verticala
+endm
+
+update_areas_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	update_areas_macro
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+update_areas_proc endp
+
 update_areav_macro macro
 local bucla_orizontala,bucla_verticala
 	xor edx,edx
@@ -550,7 +682,7 @@ get_color macro x, y, color
 	mul ebx
 	add eax,x
 	shl eax, 2
-	add eax, areav
+	add eax, areas
 	mov eax,dword ptr [eax]
 	mov color,eax
 endm
@@ -576,17 +708,27 @@ randomNumberGen proc
 randomNumberGen ENDP
 
 linie_orizontala macro x, y, len, color
-	local bucla_linie
+	local bucla_linie,nimic
 	mov eax,y
 	mov ebx, area_width
 	mul ebx
 	add eax,x
 	shl eax, 2
-	add eax, area
+	mov edx,eax
+	add edx, area
+	add eax, areas
 	mov ecx, len
 bucla_linie:
+	cmp dword ptr [edx],0c2c2c2h
+	je nimic
+	
+	cmp dword ptr [edx],0c2c2c2c2h
+	je nimic
+	
 	mov dword ptr [eax],color
+nimic:
 	add eax,4
+	add edx,4
 	loop bucla_linie
 endm
 
@@ -617,16 +759,38 @@ bucla_linie:
 endm
 
 linie_verticala macro x, y, len, color
-	local bucla_linie
+	local bucla_linie,nimic,nimic2
 	mov eax,y
 	mov ebx, area_width
 	mul ebx
 	add eax,x
 	shl eax, 2
-	add eax, area
+	mov edx,eax
+	add edx,area
+	add eax, areas
 	mov ecx, len
 bucla_linie:
+	cmp dword ptr [edx],0c2c2c2h
+	je nimic
+	
+	cmp dword ptr [edx],0c2c2c2c2h
+	je nimic
+	
 	mov dword ptr [eax],color
+nimic:
+	cmp dword ptr [eax],0
+	je nimic2
+	
+	cmp dword ptr [eax-4],0
+	
+	mov ebx,dword ptr [eax]
+	cmp ebx,dword ptr [eax-4]
+	je nimic2
+	
+	mov dword ptr [eax],0
+
+nimic2:
+	add edx,4*area_width
 	add eax,4*area_width
 	loop bucla_linie
 endm
@@ -670,10 +834,13 @@ make_matrix_lines proc
 	mov ecx,inceput_linii_orizontale
 	mov contor_linii_orizontale,ecx
 bucla_linii_orizontale:
+	
 	linie_orizontala 0,contor_linii_orizontale,area_width,0h
 	add contor_linii_orizontale,40
 	cmp contor_linii_orizontale,area_height
-	jbe bucla_linii_orizontale
+	jb bucla_linii_orizontale
+	
+	linie_orizontala 0,999,area_width,0h
 	
 	mov ecx,inceput_linii_orizontale
 	mov contor_linii_orizontale,ecx
@@ -843,22 +1010,31 @@ draw proc
 	shl eax, 2
 	push eax
 	push 0bfc9c2h
-	push area
+	push areas
 	call memset
 	add esp, 12
+	call update_area_proc
 	call make_matrix_squares
 	call update_areav_proc
-	;call make_matrix_lines
+	call update_areas_proc
+	call make_matrix_lines
 	jmp afisare_litere
 	
 evt_click:
 	get_color [ebp+arg2],[ebp+arg3],clickcolor
 	
+	push clickcolor
+	push offset hexa_format
+	call printf
+	add esp,8
+	
 	cmp clickcolor,0c2c2c2h
 	je no_delete
 	cmp clickcolor,0c2c2c2c2h
 	je no_delete
-	
+	cmp clickcolor,0h
+	je no_delete
+
 	mov cluster_size,0
 	push [ebp+arg3]
 	push [ebp+arg2]
@@ -882,6 +1058,8 @@ evt_click:
 no_delete:
 	call go_down_proc
 	call update_areav_proc
+	call update_areas_proc
+	call make_matrix_lines
 	jmp afisare_litere
 
 evt_timer:
@@ -895,34 +1073,34 @@ afisare_litere:
 	mov edx, 0
 	div ebx
 	add edx, '0'
-	make_text_macro edx, area, 30, 10
+	make_text_macro edx, areas, 30, 10
 	;cifra zecilor
 	mov edx, 0
 	div ebx
 	add edx, '0'
-	make_text_macro edx, area, 20, 10
+	make_text_macro edx, areas, 20, 10
 	;cifra sutelor
 	mov edx, 0
 	div ebx
 	add edx, '0'
-	make_text_macro edx, area, 10, 10
+	make_text_macro edx, areas, 10, 10
 	
 	;scriem un mesaj
-	make_text_macro 'L', area, 220, 18
-	make_text_macro 'A', area, 230, 18
-	make_text_macro 'U', area, 240, 18
-	make_text_macro 'R', area, 250, 18
+	make_text_macro 'L', areas, 220, 18
+	make_text_macro 'A', areas, 230, 18
+	make_text_macro 'U', areas, 240, 18
+	make_text_macro 'R', areas, 250, 18
 	;make_text_macro 'E', area, 150, 100
 	;make_text_macro 'C', area, 160, 100
 	;make_text_macro 'T', area, 170, 100
 	
 	;make_text_macro 'L', area, 130, 120
 	;make_text_macro 'A', area, 140, 120
-	make_text_macro 'C', area, 270, 18
-	make_text_macro 'R', area, 280, 18
-	make_text_macro 'U', area, 290, 18
-	make_text_macro 'S', area, 300, 18
-	make_text_macro 'H', area, 310, 18
+	make_text_macro 'C', areas, 270, 18
+	make_text_macro 'R', areas, 280, 18
+	make_text_macro 'U', areas, 290, 18
+	make_text_macro 'S', areas, 300, 18
+	make_text_macro 'H', areas, 310, 18
 	
 	;make_text_macro 'A', area, 100, 140
 	;make_text_macro 'S', area, 110, 140
@@ -968,12 +1146,12 @@ start:
 	push eax
 	call malloc
 	add esp, 4
-	mov areal, eax
+	mov areas, eax
 	;apelam functia de desenare a ferestrei
 	; typedef void (*DrawFunc)(int evt, int x, int y);
 	; void __cdecl BeginDrawing(const char *title, int width, int height, unsigned int *area, DrawFunc draw);
 	push offset draw
-	push area
+	push areas
 	push area_height
 	push area_width
 	push offset window_title
