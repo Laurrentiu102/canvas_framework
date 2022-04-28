@@ -974,6 +974,25 @@ skip:
 	cmp contor_linii_verticale,area_width
 	jbe bucla_linii_verticale
 	
+	mov eax,199
+	mov ebx, area_width
+	mul ebx
+	add eax,0
+	shl eax, 2
+	add eax,areas
+	mov ecx,800
+bucla_linie_stanga_tot:
+	cmp dword ptr [eax],0
+	jne nimic
+	
+	cmp dword ptr [eax+4],0c2c2c2c2h
+	jne nimic
+	
+	mov dword ptr [eax],0c2c2c2c2h
+	
+nimic:
+	add eax,4*area_width
+	loop bucla_linie_stanga_tot
 	popa
 	mov esp, ebp
 	pop ebp
