@@ -40,10 +40,14 @@ contor_linii_orizontale DD 199
 inceput_linii_verticale DD 0
 contor_linii_verticale DD 0
 
+number_gray_colons DD 1
+area_width_withoutgray DD 0
+
 inceput_matrice_x DD 0
 inceput_matrice_y DD 200
 
 contor_matrice_x DD 0
+contor_matrice_x1 DD 0
 contor_matrice_y DD 200
 contor_matrice_y1 DD 200
 
@@ -80,6 +84,127 @@ include letters.inc
 ; arg2 - pointer la vectorul de pixeli
 ; arg3 - pos_x
 ; arg4 - pos_y
+
+last_col_grey_macro macro
+local bucla_linie,bucla_verticala,bucla_jos_sus,nimic,inceput,bucla_stanga_dreapta
+	mov eax,200
+	mov ebx,area_width
+	mul ebx
+	add eax,area_width-40
+	shl eax,2
+	add eax,area
+	mov contor_matrice_y,200
+bucla_verticala:
+	mov contor_matrice_x,560
+bucla_orizontala:
+	mov dword ptr[eax],0c2c2c2c2h
+	add eax,4
+	inc contor_matrice_x
+	cmp contor_matrice_x,area_width
+	jne bucla_orizontala
+	add eax,4*area_width
+	sub eax,160
+	inc contor_matrice_y
+	cmp contor_matrice_y,area_height
+	jne bucla_verticala
+endm
+
+last_col_grey_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	last_col_grey_macro
+	inc number_gray_colons
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+last_col_grey_proc endp
+
+go_left_macro macro
+local bucla_linie,bucla_verticala,bucla_jos_sus,nimic,inceput,bucla_stanga_dreapta
+
+	mov eax,area_height
+	mov ebx,area_width
+	mul ebx
+	add eax,area_width
+	shl eax,2
+	sub eax,8*area_width
+	add eax,area
+	mov contor_matrice_x,0
+	mov contor_matrice_y,area_height
+bucla_linie:
+	
+	cmp dword ptr [eax],0c2c2c2c2h
+	jne nimic
+	
+	cmp dword ptr [eax+160],0c2c2c2c2h
+	je nimic
+
+inceput:
+	push eax
+	mov contor_matrice_y,area_height
+bucla_jos_sus:
+	mov ecx,contor_matrice_x
+	mov contor_matrice_x1,ecx
+	push eax
+bucla_stanga_dreapta:
+	mov ecx,dword ptr [eax+4]
+	mov dword ptr [eax],ecx
+	; pusha
+	; push 2
+	; push offset decimal_format
+	; call printf
+	; add esp,8
+	; popa
+	add eax,4
+	inc contor_matrice_x1
+	cmp contor_matrice_x1,area_width-40
+	jne bucla_stanga_dreapta
+	pop eax
+	sub eax,4*area_width
+	dec contor_matrice_y
+	cmp contor_matrice_y,200
+	jae bucla_jos_sus
+	pop eax
+	cmp dword ptr [eax],0c2c2c2c2h
+	je inceput
+	; inc number_gray_colons
+	call last_col_grey_proc
+nimic:
+	add eax,4
+	inc contor_matrice_x
+	pusha
+	mov eax,number_gray_colons
+	mov ebx,41
+	mul ebx
+	mov ebx,area_width
+	sub ebx,eax
+	mov area_width_withoutgray,ebx
+	; push area_width_withoutgray
+	; push offset decimal_format
+	; call printf
+	; add esp,8
+	popa
+	mov edx,area_width_withoutgray
+	cmp contor_matrice_x,edx
+	jbe bucla_linie
+endm
+
+go_left_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	go_left_macro
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+go_left_proc endp
 
 update_lines_macro macro
 local bucla_orizontala,bucla_verticala,nimic,if1,if2,if3
@@ -1017,7 +1142,7 @@ draw proc
 	call make_matrix_squares
 	call update_areav_proc
 	call update_areas_proc
-	call make_matrix_lines
+	;call make_matrix_lines
 	jmp afisare_litere
 	
 evt_click:
@@ -1041,7 +1166,7 @@ evt_click:
 	call is_valid_proc
 	add esp,8
 	
-	cmp cluster_size,3200
+	;cmp cluster_size,3200
 	jb no_delete
 	
 	call update_areav_proc
@@ -1057,9 +1182,10 @@ evt_click:
 	
 no_delete:
 	call go_down_proc
+	call go_left_proc
 	call update_areav_proc
 	call update_areas_proc
-	call make_matrix_lines
+	;call make_matrix_lines
 	jmp afisare_litere
 
 evt_timer:
