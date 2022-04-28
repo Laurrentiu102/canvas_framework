@@ -313,6 +313,9 @@ color_macrov macro x, y, color
 	cmp ecx,0c2c2c2h
 	je nimic
 	
+	cmp ecx,0c2c2c2c2h
+	je nimic
+	
 	cmp ecx,0
 	je nimic
 	
@@ -696,6 +699,9 @@ color_macro macro x, y, color
 	mov ecx,dword ptr [eax]
 	
 	cmp ecx,0c2c2c2h
+	je nimic
+	
+	cmp ecx,0c2c2c2c2h
 	je nimic
 	
 	cmp ecx,0
@@ -1125,7 +1131,7 @@ draw proc
 	call make_matrix_squares
 	call update_areav_proc
 	call update_areas_proc
-	;call make_matrix_lines
+	call make_matrix_lines
 	jmp afisare_litere
 	
 evt_click:
@@ -1149,7 +1155,7 @@ evt_click:
 	call is_valid_proc
 	add esp,8
 	
-	;cmp cluster_size,3200
+	cmp cluster_size,3200
 	jb no_delete
 	
 	call update_areav_proc
@@ -1168,7 +1174,7 @@ no_delete:
 	call go_left_proc
 	call update_areav_proc
 	call update_areas_proc
-	;call make_matrix_lines
+	call make_matrix_lines
 	jmp afisare_litere
 
 evt_timer:
