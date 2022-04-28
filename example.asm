@@ -40,8 +40,6 @@ contor_linii_orizontale DD 199
 inceput_linii_verticale DD 0
 contor_linii_verticale DD 0
 
-number_gray_colons DD 1
-area_width_withoutgray DD 0
 
 inceput_matrice_x DD 0
 inceput_matrice_y DD 200
@@ -115,7 +113,6 @@ last_col_grey_proc proc
 	pusha
 	
 	last_col_grey_macro
-	inc number_gray_colons
 	
 	popa
 	mov esp, ebp
@@ -171,25 +168,11 @@ bucla_stanga_dreapta:
 	pop eax
 	cmp dword ptr [eax],0c2c2c2c2h
 	je inceput
-	; inc number_gray_colons
 	call last_col_grey_proc
 nimic:
 	add eax,4
 	inc contor_matrice_x
-	pusha
-	mov eax,number_gray_colons
-	mov ebx,41
-	mul ebx
-	mov ebx,area_width
-	sub ebx,eax
-	mov area_width_withoutgray,ebx
-	; push area_width_withoutgray
-	; push offset decimal_format
-	; call printf
-	; add esp,8
-	popa
-	mov edx,area_width_withoutgray
-	cmp contor_matrice_x,edx
+	cmp contor_matrice_x,area_width-41
 	jbe bucla_linie
 endm
 
