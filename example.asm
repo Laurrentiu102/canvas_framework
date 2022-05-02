@@ -10,6 +10,10 @@ extern exit: proc
 extern malloc: proc
 extern memset: proc
 extern exit: proc
+extern fclose: proc
+extern fscanf: proc
+extern fopen: proc
+extern fprintf: proc
 extern printf: proc
 extern rand: proc
 extern srand: proc
@@ -26,14 +30,20 @@ public start
 ;sectiunile programului, date, respectiv cod
 .data
 ;aici declaram date
+mode_read DB "r", 0
+mode_write DB "w", 0
+file_name DB "scores.txt", 0
+
 hexa_format DB "%x", 0ah, 0
-decimal_format DB "decimal: %d", 0ah, 0
+decimal_format DB "%d", 0ah, 0
 decimal_formatx2 DB "%d %d", 0ah, 0
 window_title DB "LaurCrush",0
 area_width EQU 600;640
 area_height EQU 1000;480
 
 cluster_size DD 100
+
+actual_score DD 0
 
 inceput_linii_orizontale DD 200
 contor_linii_orizontale DD 199
@@ -73,6 +83,8 @@ arg4 EQU 20
 
 symbol_width EQU 10
 symbol_height EQU 20
+
+high_score DD 0
 include digits.inc
 include letters.inc
 
@@ -82,6 +94,76 @@ include letters.inc
 ; arg2 - pointer la vectorul de pixeli
 ; arg3 - pos_x
 ; arg4 - pos_y
+
+update_highscore proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	mov ecx,actual_score
+	cmp ecx,high_score
+	jbe nimic
+	
+	mov high_score,ecx
+	
+	push offset mode_write
+	push offset file_name
+	call fopen
+	add esp,8
+	
+	pusha
+	push high_score
+	push offset decimal_format
+	call printf
+	add esp,8
+	popa
+	
+	push eax
+	push high_score
+	push offset decimal_format
+	push eax
+	call fprintf
+	add esp,12
+	pop eax
+	
+	push eax
+	call fclose
+	add esp,4
+	
+nimic:
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+update_highscore endp
+
+get_highscore proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	push offset mode_read
+	push offset file_name
+	call fopen
+	add esp,8
+	
+	push eax
+	push offset high_score
+	push offset decimal_format
+	push eax
+	call fscanf
+	add esp,12
+	pop eax
+	
+	push eax
+	call fclose
+	add esp,4
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+get_highscore endp
 
 last_col_grey_macro macro
 local bucla_linie,bucla_verticala,bucla_jos_sus,nimic,inceput,bucla_stanga_dreapta
@@ -553,6 +635,13 @@ is_valid_proc proc
 	; add esp,12
 	
 	is_valid_macro [ebp+arg1], [ebp+arg2],clickcolor
+	
+	; pusha
+	; push esp
+	; push offset hexa_format
+	; call printf
+	; add esp,8
+	; popa
 	
 	cmp eax,0
 	je return
@@ -1177,6 +1266,19 @@ evt_click:
 	cmp cluster_size,3200
 	jb no_delete
 	
+	pusha
+	mov eax,cluster_size
+	xor edx,edx
+	mov ebx,100
+	div ebx
+	xor ecx,ecx
+	mov cl,al
+	add actual_score,eax
+	; push actual_score
+	; push offset decimal_format
+	; call printf
+	; add esp,8
+	popa
 	call update_areav_proc
 	push [ebp+arg3]
 	push [ebp+arg2]
@@ -1191,15 +1293,82 @@ evt_click:
 no_delete:
 	call go_down_proc
 	call go_left_proc
+	call go_left_proc
+	call go_left_proc
 	call update_areav_proc
 	call update_areas_proc
 	call make_matrix_lines
+	call update_highscore
 	jmp afisare_litere
 
 evt_timer:
 	inc counter	
 
 afisare_litere:
+	mov ebx,10
+	mov eax,high_score
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 580, 10
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 570, 10
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 560, 10
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 550, 10
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 540, 10
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 530, 10
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 520, 10
+
+	
+	mov ebx,10
+	mov eax,actual_score
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 580, 30
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 570, 30
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 560, 30
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 550, 30
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 540, 30
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 530, 30
+	mov edx, 0
+	div ebx
+	add edx,'0'
+	make_text_macro edx, areas, 520, 30
+	
+	
 	;afisam valoarea counter-ului curent (sute, zeci si unitati)
 	mov ebx, 10
 	mov eax, counter
@@ -1220,6 +1389,31 @@ afisare_litere:
 	make_text_macro edx, areas, 10, 10
 	
 	;scriem un mesaj
+	
+	make_text_macro 'H', areas, 410, 10
+	make_text_macro 'I', areas, 420, 10
+	make_text_macro 'G', areas, 430, 10
+	make_text_macro 'H', areas, 440, 10
+	make_text_macro ' ', areas, 450, 10
+	make_text_macro 'S', areas, 460, 10
+	make_text_macro 'C', areas, 470, 10
+	make_text_macro 'O', areas, 480, 10
+	make_text_macro 'R', areas, 490, 10
+	make_text_macro 'E', areas, 500, 10
+	make_text_macro ':', areas, 510, 10
+	
+	make_text_macro 'Y', areas, 410, 30
+	make_text_macro 'O', areas, 420, 30
+	make_text_macro 'U', areas, 430, 30
+	make_text_macro 'R', areas, 440, 30
+	make_text_macro ' ', areas, 450, 30
+	make_text_macro 'S', areas, 460, 30
+	make_text_macro 'C', areas, 470, 30
+	make_text_macro 'O', areas, 480, 30
+	make_text_macro 'R', areas, 490, 30
+	make_text_macro 'E', areas, 500, 30
+	make_text_macro ':', areas, 510, 30
+	
 	make_text_macro 'L', areas, 220, 18
 	make_text_macro 'A', areas, 230, 18
 	make_text_macro 'U', areas, 240, 18
@@ -1254,6 +1448,7 @@ final_draw:
 draw endp
 
 start:
+	call get_highscore
 	;alocam memorie pentru zona de desenat
 	mov eax, area_width
 	mov ebx, area_height
