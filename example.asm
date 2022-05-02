@@ -1222,9 +1222,11 @@ draw proc
 	
 	mov eax, [ebp+arg1]
 	cmp eax, 1
-	jz evt_click
+	je evt_click
 	cmp eax, 2
-	jz evt_timer ; nu s-a efectuat click pe nimic
+	je evt_timer ; nu s-a efectuat click pe nimic
+	cmp eax,3
+	je tasta
 	;mai jos e codul care intializeaza fereastra cu pixeli albi
 	mov eax, area_width
 	mov ebx, area_height
@@ -1303,7 +1305,7 @@ no_delete:
 
 evt_timer:
 	inc counter	
-
+tasta:
 afisare_litere:
 	mov ebx,10
 	mov eax,high_score
