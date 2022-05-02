@@ -30,12 +30,14 @@ public start
 ;sectiunile programului, date, respectiv cod
 .data
 ;aici declaram date
+contor_nickname DD 0
 mode_read DB "r", 0
 mode_write DB "w", 0
 file_name DB "scores.txt", 0
 
 hexa_format DB "%x", 0ah, 0
 decimal_format DB "%d", 0ah, 0
+string_format DB "%s", 0ah, 0
 decimal_formatx2 DB "%d %d", 0ah, 0
 window_title DB "LaurCrush",0
 area_width EQU 600;640
@@ -85,6 +87,7 @@ symbol_width EQU 10
 symbol_height EQU 20
 
 high_score DD 0
+nickname DB 50 dup(0)
 include digits.inc
 include letters.inc
 
@@ -1305,7 +1308,18 @@ no_delete:
 
 evt_timer:
 	inc counter	
+	jmp afisare_litere
 tasta:
+	pusha
+	mov cl,[ebp+arg2]
+	mov esi,contor_nickname
+	mov nickname[esi],cl
+	inc contor_nickname
+	push offset nickname
+	push offset string_format
+	call printf
+	add esp,8
+	popa
 afisare_litere:
 	mov ebx,10
 	mov eax,high_score
