@@ -15,6 +15,7 @@ extern fscanf: proc
 extern fopen: proc
 extern fprintf: proc
 extern printf: proc
+extern fgets: proc
 extern rand: proc
 extern srand: proc
 extern time: proc
@@ -33,8 +34,13 @@ public start
 contor_nickname DD 0
 mode_read DB "r", 0
 mode_write DB "w", 0
+mode_append DB "a", 0
 file_name DB "scores.txt", 0
-
+pointer_file_name DD 0
+file_name_old DB "scores_old.txt", 0
+pointer_file_name_old DD 0
+started DB 0
+nickname_score_format DB "%s %d",0ah,0
 hexa_format DB "%x", 0ah, 0
 decimal_format DB "%d", 0ah, 0
 string_format DB "%s", 0ah, 0
@@ -88,6 +94,8 @@ symbol_height EQU 20
 
 high_score DD 0
 nickname DB 50 dup(0)
+nickname_de_aruncat DB 50 dup(0)
+scor_de_aruncat DD 0
 include digits.inc
 include letters.inc
 
@@ -103,32 +111,114 @@ update_highscore proc
 	mov ebp, esp
 	pusha
 	
-	mov ecx,actual_score
-	cmp ecx,high_score
-	jbe nimic
+	; mov ecx,actual_score
+	; cmp ecx,high_score
+	; jbe nimic
 	
-	mov high_score,ecx
+	;mov high_score,ecx
+	
+	
+	push offset mode_write
+	push offset file_name_old
+	call fopen
+	add esp,8
+	mov pointer_file_name_old,eax
+	
+	push offset mode_read
+	push offset file_name
+	call fopen
+	add esp,8
+	mov pointer_file_name,eax
+	
+	mov edi,1
+	
+bucla_citire_pana_la_final:
+	push offset scor_de_aruncat
+	push offset nickname_de_aruncat
+	push offset nickname_score_format
+	mov eax,pointer_file_name
+	push eax
+	call fscanf
+	add esp,16
+	
+	mov eax,scor_de_aruncat
+	cmp eax,actual_score
+	ja skip_scriere_actual
+	
+	cmp edi,1
+	jne skip_scriere_actual
+	
+	mov eax,actual_score
+	push eax
+	push offset nickname
+	push offset nickname_score_format
+	mov eax,pointer_file_name_old
+	push eax
+	call fprintf
+	add esp,16
+	dec edi
+skip_scriere_actual:
+	mov eax,scor_de_aruncat
+	push eax
+	push offset nickname_de_aruncat
+	push offset nickname_score_format
+	mov eax,pointer_file_name_old
+	push eax
+	call fprintf
+	add esp,16
+	
+	cmp scor_de_aruncat,0
+	jne bucla_citire_pana_la_final
+	
+	mov eax,pointer_file_name
+	push eax
+	call fclose
+	add esp,4
+	
+	mov eax,pointer_file_name_old
+	push eax
+	call fclose
+	add esp,4
+	
+	push offset mode_read
+	push offset file_name_old
+	call fopen
+	add esp,8
+	mov pointer_file_name_old,eax
 	
 	push offset mode_write
 	push offset file_name
 	call fopen
 	add esp,8
-	
-	pusha
-	push high_score
-	push offset decimal_format
-	call printf
-	add esp,8
-	popa
-	
+	mov pointer_file_name,eax
+
+bucla_scriere_pana_la_final:
+	push offset scor_de_aruncat
+	push offset nickname_de_aruncat
+	push offset nickname_score_format
+	mov eax,pointer_file_name_old
 	push eax
-	push high_score
-	push offset decimal_format
+	call fscanf
+	add esp,16
+	
+	mov eax,scor_de_aruncat
+	push eax
+	push offset nickname_de_aruncat
+	push offset nickname_score_format
+	mov eax,pointer_file_name
 	push eax
 	call fprintf
-	add esp,12
-	pop eax
+	add esp,16
 	
+	cmp scor_de_aruncat,0
+	jne bucla_scriere_pana_la_final
+	
+	mov eax,pointer_file_name
+	push eax
+	call fclose
+	add esp,4
+	
+	mov eax,pointer_file_name_old
 	push eax
 	call fclose
 	add esp,4
@@ -152,10 +242,11 @@ get_highscore proc
 	
 	push eax
 	push offset high_score
-	push offset decimal_format
+	push offset nickname_de_aruncat
+	push offset nickname_score_format
 	push eax
 	call fscanf
-	add esp,12
+	add esp,16
 	pop eax
 	
 	push eax
@@ -1097,40 +1188,7 @@ make_square proc
 	pusha
 	
 	call randomNumberGen
-	mov edx,0
-	
-	cmp eax,0
-	je rosu
-	
-	cmp eax,1
-	je albastru
-	
-	cmp eax,2
-	je violet
-	
-	cmp eax,3
-	je verde
-	
-	cmp eax,4
-	je galben
-	
-	
-rosu:
-	add edx,0f21111h
-	jmp final
-albastru:
-	add edx,01149f2h
-	jmp final
-violet: 
-	add edx,0ba04b1h
-	jmp final
-verde:
-	add edx,038ed24h
-	jmp final
-galben:
-	add edx,0fffc4ah
-	jmp final
-	;add edx,[colors+eax]
+	mov edx,dword ptr [colors+4*eax]
 	final:
 	square [ebp+arg1],[ebp+arg2],40,edx
 	
@@ -1213,6 +1271,103 @@ make_text_macro macro symbol, drawArea, x, y
 	add esp, 16
 endm
 
+make_start_button macro
+	mov eax, 450
+	mov ebx, area_width
+	mul ebx
+	add eax, 240
+	shl eax, 2
+	add eax, areas
+	mov ecx,50
+bucla_verticala:
+	mov edx,100
+bucla_orizontala:
+	mov dword ptr [eax],0e8e843h
+	add eax,4
+	dec edx
+	jnz bucla_orizontala
+	sub eax,400
+	add eax,4*area_width
+	loop bucla_verticala
+endm
+
+nickname_top_left_display macro
+	make_text_macro 'N', area, 10,40
+	make_text_macro 'I', area, 20,40
+	make_text_macro 'C', area, 30,40
+	make_text_macro 'K', area, 40,40
+	make_text_macro 'N', area, 50,40
+	make_text_macro 'A', area, 60,40
+	make_text_macro 'M', area, 70,40
+	make_text_macro 'E', area, 80,40
+	
+	mov al,[nickname+0]
+	make_text_macro eax, area, 100,40
+	mov al,[nickname+1]
+	make_text_macro eax, area, 110,40
+	mov al,[nickname+2]
+	make_text_macro eax, area, 120,40
+	mov al,[nickname+3]
+	make_text_macro eax, area, 130,40
+	mov al,[nickname+4]
+	make_text_macro eax, area, 140,40
+	mov al,[nickname+5]
+	make_text_macro eax, area, 150,40
+	mov al,[nickname+6]
+	make_text_macro eax, area, 160,40
+	mov al,[nickname+7]
+	make_text_macro eax, area, 170,40
+endm
+
+nickname_display macro
+	make_text_macro 'E', areas, 263,360
+	make_text_macro 'N', areas, 273,360
+	make_text_macro 'T', areas, 283,360
+	make_text_macro 'E', areas, 293,360
+	make_text_macro 'R', areas, 303,360
+	
+	make_text_macro 'A', areas, 283,380
+	
+	make_text_macro 'N', areas, 250,400
+	make_text_macro 'I', areas, 260,400
+	make_text_macro 'C', areas, 270,400
+	make_text_macro 'K', areas, 280,400
+	make_text_macro 'N', areas, 290,400
+	make_text_macro 'A', areas, 300,400
+	make_text_macro 'M', areas, 310,400
+	make_text_macro 'E', areas, 320,400
+	
+	mov al,[nickname+0]
+	make_text_macro eax, areas, 250,420
+	mov al,[nickname+1]
+	make_text_macro eax, areas, 260,420
+	mov al,[nickname+2]
+	make_text_macro eax, areas, 270,420
+	mov al,[nickname+3]
+	make_text_macro eax, areas, 280,420
+	mov al,[nickname+4]
+	make_text_macro eax, areas, 290,420
+	mov al,[nickname+5]
+	make_text_macro eax, areas, 300,420
+	mov al,[nickname+6]
+	make_text_macro eax, areas, 310,420
+	mov al,[nickname+7]
+	make_text_macro eax, areas, 320,420
+endm
+start_screen proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	nickname_display
+	;make_start_button
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+start_screen endp
+
+
 ; functia de desenare - se apeleaza la fiecare click
 ; sau la fiecare interval de 200ms in care nu s-a dat click
 ; arg1 - evt (0 - initializare, 1 - click, 2 - s-a scurs intervalul fara click)
@@ -1242,12 +1397,19 @@ draw proc
 	add esp, 12
 	call update_area_proc
 	call make_matrix_squares
+	cmp started,0
+	je skip
+afisare:
 	call update_areav_proc
 	call update_areas_proc
 	call make_matrix_lines
 	jmp afisare_litere
 	
 evt_click:
+	cmp started,0
+	je skip
+skip_score:
+	
 	get_color [ebp+arg2],[ebp+arg3],clickcolor
 	
 	push clickcolor
@@ -1295,6 +1457,11 @@ evt_click:
 	call color_procv
 	add esp,8
 	
+	mov eax,actual_score
+	cmp eax,high_score
+	jb skip_score
+	mov high_score,eax
+	
 no_delete:
 	call go_down_proc
 	call go_left_proc
@@ -1304,22 +1471,61 @@ no_delete:
 	call update_areas_proc
 	call make_matrix_lines
 	call update_highscore
+skip:
+	cmp started,0
+	jne skip_start_screen
+	call start_screen
+	
 	jmp afisare_litere
 
 evt_timer:
-	inc counter	
+	inc counter
+	cmp started,0
+	jne skip_start_screen
+	call start_screen
+skip_start_screen:
+	nickname_top_left_display
 	jmp afisare_litere
 tasta:
+	cmp started,0
+	jne afisare_litere
 	pusha
 	mov cl,[ebp+arg2]
+	cmp cl,65
+	jb skip_nu_litera
+	cmp cl,90
+	ja skip_nu_litera
 	mov esi,contor_nickname
 	mov nickname[esi],cl
 	inc contor_nickname
-	push offset nickname
-	push offset string_format
+skip_nu_litera:
+	mov cl,[ebp+arg2]
+	cmp cl,8
+	jne skip_backspace
+	mov esi,contor_nickname
+	dec esi
+	mov nickname[esi],0
+	dec contor_nickname
+	cmp contor_nickname,0
+	jg skip_backspace
+	mov contor_nickname,0
+skip_backspace:
+	mov cl,[ebp+arg2]
+	cmp cl,13
+	jne skip_enter
+	pusha
+	mov al,started
+	push eax
+	push offset decimal_format
 	call printf
 	add esp,8
 	popa
+	mov started,1
+	popa
+	jmp afisare
+skip_enter:
+	popa
+	call start_screen
 afisare_litere:
 	mov ebx,10
 	mov eax,high_score
