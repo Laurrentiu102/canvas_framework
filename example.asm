@@ -49,6 +49,8 @@ window_title DB "LaurCrush",0
 area_width EQU 600;640
 area_height EQU 1000;480
 
+game_color DD 0
+
 cluster_size DD 100
 
 actual_score DD 0
@@ -96,6 +98,12 @@ high_score DD 0
 nickname DB 50 dup(0)
 nickname_de_aruncat DB 50 dup(0)
 scor_de_aruncat DD 0
+game_over DD 1
+coordx DD 0
+coordy DD 0
+game_over_size DD 0
+disable_click DD 0
+disable_timer DD 0
 include digits.inc
 include letters.inc
 
@@ -685,6 +693,9 @@ is_valid_macro macro x, y, color
 	
 	
 	cmp ecx,0c2c2c2h
+	je nimic
+	
+	cmp ecx,0c2c2c2c2h
 	je nimic
 	
 	cmp ecx,0
@@ -1319,6 +1330,47 @@ nickname_top_left_display macro
 	make_text_macro eax, area, 170,40
 endm
 
+nickname_top_left_displays macro
+	make_text_macro 'N', areas, 10,40
+	make_text_macro 'I', areas, 20,40
+	make_text_macro 'C', areas, 30,40
+	make_text_macro 'K', areas, 40,40
+	make_text_macro 'N', areas, 50,40
+	make_text_macro 'A', areas, 60,40
+	make_text_macro 'M', areas, 70,40
+	make_text_macro 'E', areas, 80,40
+	
+	mov al,[nickname+0]
+	make_text_macro eax, areas, 100,40
+	mov al,[nickname+1]
+	make_text_macro eax, areas, 110,40
+	mov al,[nickname+2]
+	make_text_macro eax, areas, 120,40
+	mov al,[nickname+3]
+	make_text_macro eax, areas, 130,40
+	mov al,[nickname+4]
+	make_text_macro eax, areas, 140,40
+	mov al,[nickname+5]
+	make_text_macro eax, areas, 150,40
+	mov al,[nickname+6]
+	make_text_macro eax, areas, 160,40
+	mov al,[nickname+7]
+	make_text_macro eax, areas, 170,40
+endm
+
+game_over_display macro
+	make_text_macro 'G', areas, 240,100
+	make_text_macro 'A', areas, 250,100
+	make_text_macro 'M', areas, 260,100
+	make_text_macro 'E', areas, 270,100
+	make_text_macro ' ', areas, 280,100
+	
+	make_text_macro 'O', areas, 290,100
+	make_text_macro 'V', areas, 300,100
+	make_text_macro 'E', areas, 310,100
+	make_text_macro 'R', areas, 320,100
+endm
+
 nickname_display macro
 	make_text_macro 'E', areas, 263,360
 	make_text_macro 'N', areas, 273,360
@@ -1367,7 +1419,191 @@ start_screen proc
 	ret
 start_screen endp
 
+is_valid_macro_game macro x, y, color
+	local coloreaza,nimic,final
+	mov ecx,x
+	cmp ecx,area_width
+	jae nimic
+	
+	mov ecx,y
+	cmp ecx,area_height
+	jae nimic
+	
+	mov ecx,y
+	cmp ecx,199
+	jb nimic
+	
+	mov ecx,x
+	cmp ecx,0
+	jb nimic
+	
+	mov eax,y
+	mov ebx, area_width
+	mul ebx
+	add eax,x
+	shl eax, 2
+	add eax, areav
+	mov ecx,dword ptr [eax]
+	
+	
+	cmp ecx,0c2c2c2h
+	je nimic
+	
+	cmp ecx,0c2c2c2c2h
+	je nimic
+	
+	cmp ecx,0
+	je nimic
+	
+	cmp ecx,0ffffffh
+	je nimic
+	
+	cmp ecx,game_color
+	je coloreaza
+	
+	
+	; cmp ecx,0
+	; je coloreaza
+	
+	jmp nimic
 
+coloreaza:
+	mov dword ptr [eax],0c2c2c2h
+	inc cluster_size
+	mov eax,-1
+	jmp final
+coloreaza_alb:
+	mov dword ptr [eax],0ffffffh
+	mov eax,-1
+	jmp final
+nimic:
+	mov eax,0
+final:
+endm
+
+is_valid_game_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; push offset decimal_formatx2
+	; call printf
+	; add esp,12
+	
+	is_valid_macro_game [ebp+arg1], [ebp+arg2],game_color
+	
+	; pusha
+	; push esp
+	; push offset hexa_format
+	; call printf
+	; add esp,8
+	; popa
+	
+	cmp eax,0
+	je return
+	
+	;
+	; add dword ptr [ebp+arg1],1
+	; push [ebp+arg2]
+	; push [ebp+arg1]
+	; call is_valid_proc
+	; add esp,12	
+	
+	sub dword ptr [ebp+arg1],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_game_proc
+	add esp,8
+	
+	add dword ptr [ebp+arg1],1
+	add dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_game_proc
+	add esp,8
+	
+	add dword ptr [ebp+arg1],1
+	sub dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_game_proc
+	add esp,8
+	
+	sub dword ptr [ebp+arg1],1
+	sub dword ptr [ebp+arg2],1
+	push [ebp+arg2]
+	push [ebp+arg1]
+	call is_valid_game_proc
+	add esp,8
+	
+return:
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+is_valid_game_proc endp
+
+game_over_macro macro
+	mov game_over,0
+	mov eax, 220
+	mov ebx, area_width
+	mul ebx
+	add eax,20
+	shl eax, 2
+	add eax, areav
+	mov coordx,20
+	mov coordy,220
+	mov contor_matrice_y,20 
+bucla_verticala:
+	mov contor_matrice_x,15
+	mov coordx,20
+bucla_orizontala:
+	;mov dword ptr [eax],0ffffffh
+	mov ecx,dword ptr [eax]
+	mov game_color,ecx
+	add eax,160
+	add coordx,40
+	cmp game_over,0
+	jne skip_game_over
+	pusha
+	mov eax,coordy
+	push eax
+	mov eax,coordx
+	push eax
+	mov cluster_size,0
+	call is_valid_game_proc
+	add esp,8
+	cmp cluster_size,2000
+	jb skip
+	mov game_over,1
+skip:
+	popa
+	dec contor_matrice_x
+	jnz bucla_orizontala
+	add eax,160*area_width
+	sub eax,2400
+	add coordy,40
+	dec contor_matrice_y
+	jnz bucla_verticala
+	jmp skip_game_over
+skip_game_over:
+endm
+
+game_over_proc proc
+	push ebp
+	mov ebp, esp
+	pusha
+	
+	game_over_macro
+	
+	popa
+	mov esp, ebp
+	pop ebp
+	ret
+game_over_proc endp
 ; functia de desenare - se apeleaza la fiecare click
 ; sau la fiecare interval de 200ms in care nu s-a dat click
 ; arg1 - evt (0 - initializare, 1 - click, 2 - s-a scurs intervalul fara click)
@@ -1406,16 +1642,19 @@ afisare:
 	jmp afisare_litere
 	
 evt_click:
+	nickname_top_left_display
 	cmp started,0
 	je skip
+	cmp disable_click,1
+	je skip_click
 skip_score:
 	
 	get_color [ebp+arg2],[ebp+arg3],clickcolor
 	
-	push clickcolor
-	push offset hexa_format
-	call printf
-	add esp,8
+	; push clickcolor
+	; push offset hexa_format
+	; call printf
+	; add esp,8
 	
 	cmp clickcolor,0c2c2c2h
 	je no_delete
@@ -1468,18 +1707,35 @@ no_delete:
 	call go_left_proc
 	call go_left_proc
 	call update_areav_proc
+	
+	call game_over_proc
+	call update_areav_proc
+	
 	call update_areas_proc
 	call make_matrix_lines
-	call update_highscore
 skip:
 	cmp started,0
 	jne skip_start_screen
 	call start_screen
 	
+skip_click:
+	nickname_top_left_display
 	jmp afisare_litere
 
 evt_timer:
+	nickname_top_left_display
+	cmp disable_timer,1
+	je skip1
 	inc counter
+	cmp game_over,0
+	jne skip1
+	call update_highscore
+	game_over_display
+	mov disable_click,1
+	mov disable_timer,1
+skip1:
+	; call game_over_proc
+	; call update_areav_proc
 	cmp started,0
 	jne skip_start_screen
 	call start_screen
@@ -1514,11 +1770,11 @@ skip_backspace:
 	cmp cl,13
 	jne skip_enter
 	pusha
-	mov al,started
-	push eax
-	push offset decimal_format
-	call printf
-	add esp,8
+	; mov al,started
+	; push eax
+	; push offset decimal_format
+	; call printf
+	; add esp,8
 	popa
 	mov started,1
 	popa
