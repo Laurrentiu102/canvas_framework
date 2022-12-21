@@ -1866,8 +1866,6 @@ afisare_litere:
 	add edx, '0'
 	make_text_macro edx, areas, 10, 10
 	
-	;scriem un mesaj
-	
 	make_text_macro 'H', areas, 410, 10
 	make_text_macro 'I', areas, 420, 10
 	make_text_macro 'G', areas, 430, 10
@@ -1892,32 +1890,17 @@ afisare_litere:
 	make_text_macro 'E', areas, 500, 30
 	make_text_macro ':', areas, 510, 30
 	
-	make_text_macro 'L', areas, 220, 18
-	make_text_macro 'A', areas, 230, 18
-	make_text_macro 'U', areas, 240, 18
-	make_text_macro 'R', areas, 250, 18
-	;make_text_macro 'E', area, 150, 100
-	;make_text_macro 'C', area, 160, 100
-	;make_text_macro 'T', area, 170, 100
-	
-	;make_text_macro 'L', area, 130, 120
-	;make_text_macro 'A', area, 140, 120
-	make_text_macro 'C', areas, 270, 18
-	make_text_macro 'R', areas, 280, 18
-	make_text_macro 'U', areas, 290, 18
-	make_text_macro 'S', areas, 300, 18
-	make_text_macro 'H', areas, 310, 18
-	
-	;make_text_macro 'A', area, 100, 140
-	;make_text_macro 'S', area, 110, 140
-	;make_text_macro 'A', area, 120, 140
-	; make_text_macro 'M', area, 130, 140
-	; make_text_macro 'B', area, 140, 140
-	; make_text_macro 'L', area, 150, 140
-	; make_text_macro 'A', area, 160, 140
-	; make_text_macro 'R', area, 170, 140
-	; make_text_macro 'E', area, 180, 140
-
+	make_text_macro 'C', areas, 220, 18
+	make_text_macro 'L', areas, 230, 18
+	make_text_macro 'I', areas, 240, 18
+	make_text_macro 'C', areas, 250, 18
+	make_text_macro 'K', areas, 260, 18
+	make_text_macro 'O', areas, 270, 18
+	make_text_macro 'M', areas, 290, 18
+	make_text_macro 'A', areas, 300, 18
+	make_text_macro 'N', areas, 310, 18
+	make_text_macro 'I', areas, 320, 18
+	make_text_macro 'A', areas, 330, 18
 final_draw:
 	popa
 	mov esp, ebp
